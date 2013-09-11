@@ -21,6 +21,7 @@
 			/**
 			 * Based on the cannon callback demo: A gravity simulation...
 			 */
+			var loadTestData = true;
 			var demo = new CANNON.Demo();
 			var world = demo.getWorld();
 
@@ -32,11 +33,17 @@
 			var planets = [];
 			var planetsShape = [];
 
-			demo.addScene("Planets", function() {
-				for (var i = 0; i < bodiesCount; i++) {
-					var z = createRandomPlanet();
-				}
-			});
+			if (!loadTestData) {
+				demo.addScene("Planets", function() {
+					for (var i = 0; i < bodiesCount; i++) {
+						var z = createRandomPlanet();
+					}
+				});
+			} else {
+				demo.addScene("Planets", function() {
+					createTestScene();
+				});
+			}
 
 			createRandomPlanet = function() {
 				var mass = Math.floor((Math.random() * spawnMassLimit) + 1);
@@ -49,6 +56,10 @@
 				var i = createPlanet(mass, posX, posY, posZ, velX, velY, velZ);
 				return i;
 
+			}
+			createTestScene = function() {
+				var v = createPlanet(150, 5, 0, 0, 0, 0, 0);
+				v = createPlanet(150, -5, 0, 0, 0, 0, 0);
 			}
 			createPlanet = function(mass, posX, posY, posZ, velX, velY, velZ) {
 
@@ -115,8 +126,10 @@
 							planets[i].lastCollidedWith = e.with.planetId;
 
 							//TODO: now we should add the masses
-							e.mass += e.with.mass;
-							e.radius = e.mass / (10 * Math.PI);
+							planets[i].mass = planets[i].mass + e.with.mass;
+							planetsShape[i].radius = planets[i].mass / (10 * Math.PI);
+							planetsShape[i].boundingSphereRadius = planets[i].mass / (10 * Math.PI);
+							planetsShape[i].boundingSphereRadiusNeedsUpdate = true;
 							//TODO: animate to new size
 
 							// And we add them to the demo to make them visible
@@ -125,13 +138,10 @@
 
 							//delete body...
 							delete planets[planets.indexOf(e.with)];
-							delete planetsShape[planets.indexOf(e.with)];
+							delete planetsShape[planetsShape.indexOf(e.with)];
 
-							// We add the objects to the world to simulate them
-							//							demo.removeVisual(planets[e]);
-							planetsShape[i] = new CANNON.Sphere(thisMass / (10 * Math.PI));
-							//			demo.addVisual(planetsShape[e]);
-							//planetsShape[i].updateMatrix();
+							//planets.splice(planets.indexOf(e.with),1);
+							//planetsShape.splice(planetsShape.indexOf(e.with),1);
 
 						}
 					}

@@ -443,8 +443,8 @@ CANNON.Demo = function(options){
         // Camera
         camera = new THREE.PerspectiveCamera( 24, SCREEN_WIDTH / SCREEN_HEIGHT, NEAR, FAR );
 
-        camera.up.set(0,0,1);
-        camera.position.set(0,30,20);
+        camera.up.set(0,0,2);
+        camera.position.set(0,-50,80);
 
         // SCENE
         scene = new THREE.Scene();
