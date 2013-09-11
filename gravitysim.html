@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>cannon.js - gravitysim demo</title>
+		<meta charset="utf-8">
+		<link rel="stylesheet" href="style.css" type="text/css"/>
+		<link href="libs/toastr/toastr.css" rel="stylesheet"/>
+	</head>
+	<body>
+
+		<script src="libs/jquery-1.10.0.min.js"></script>
+		<script src="libs/cannon.js"></script>
+		<script src="scene/cannon.demo.js"></script>
+		<script src="libs/dat.gui.js"></script>
+		<script src="libs/Three.js"></script>
+		<script src="libs/Detector.js"></script>
+		<script src="libs/Stats.js"></script>
+		<script src="libs/smoothie.js"></script>
+		<script src="libs/toastr/toastr.js"></script>
+		<script>
+			/**
+			 * Based on the cannon callback demo: A gravity simulation...
+			 */
+			var demo = new CANNON.Demo();
+			var world = demo.getWorld();
+
+			var spawnDistanceLimit = 100;
+			var spawnSpeedLimit = 0;
+			var spawnMassLimit = 100;
+			var bodiesCount = 40;
+
+			var planets = [];
+			var planetsShape = [];
+
+			demo.addScene("Planets", function() {
+				for (var i = 0; i < bodiesCount; i++) {
+					var z = createRandomPlanet();
+				}
+			});
+
+			createRandomPlanet = function() {
+				var mass = Math.floor((Math.random() * spawnMassLimit) + 1);
+				var posX = Math.floor((Math.random() * spawnDistanceLimit) + 1 - (spawnDistanceLimit / 2));
+				var posY = Math.floor((Math.random() * spawnDistanceLimit) + 1 - (spawnDistanceLimit / 2));
+				var posZ = Math.floor((Math.random() * spawnDistanceLimit) + 1 - (spawnDistanceLimit / 2));
+				var velX = (Math.random() * spawnSpeedLimit) - (spawnSpeedLimit / 2);
+				var velY = (Math.random() * spawnSpeedLimit) - (spawnSpeedLimit / 2);
+				var velZ = (Math.random() * spawnSpeedLimit) - (spawnSpeedLimit / 2);
+				var i = createPlanet(mass, posX, posY, posZ, velX, velY, velZ);
+				return i;
+
+			}
+			createPlanet = function(mass, posX, posY, posZ, velX, velY, velZ) {
+
+				planetsShape.push();
+				var newGuid = guid();
+				var i = planetsShape.length;
+				var thisMass = mass;
+
+				planetsShape[i] = new CANNON.Sphere(thisMass / (10 * Math.PI));
+				planetsShape[i].planetId = newGuid;
+				planets.push();
+
+				planets[i] = new CANNON.RigidBody(thisMass, planetsShape[i]);
+				planets[i].planetId = newGuid;
+				planets[i].lastCollidedWith = -1;
+				planets[i].position.set(posX, posY, posZ);
+				planets[i].velocity.set(velX, velY, velZ);
+				planets[i].linearDamping = 0.0;
+
+				// We add the objects to the world to simulate them
+				world.add(planets[i]);
+
+				// And we add them to the demo to make them visible
+				demo.addVisual(planets[i]);
+
+				planets[i].preStep = function() {
+
+					//we need to juggle this and that as we are going through a loop...
+					that = this;
+
+					var thisSumForce = new CANNON.Vec3();
+					//console.log(that.position.x);
+					planets.forEach(function(thisPlanet) {
+						//for each(var thisPlanet in planets) {
+						if (that.planetId != thisPlanet.planetId) {
+							var thisPlanet_to_that = new CANNON.Vec3(thisPlanet.position.x - that.position.x, thisPlanet.position.y - that.position.y, thisPlanet.position.z - that.position.z);
+							var distance = that.position.distanceTo(thisPlanet.position);
+
+							//temp force.
+							var tempForce = new CANNON.Vec3();
+
+							// Now apply force on temp vector
+							thisPlanet_to_that.normalize();
+							thisPlanet_to_that.mult(thisPlanet.mass / Math.pow(distance, 2), tempForce);
+
+							thisSumForce.x += tempForce.x;
+							thisSumForce.y += tempForce.y;
+							thisSumForce.z += tempForce.z;
+						}
+					});
+
+					//now apply the resultant force to that.
+					that.force = thisSumForce;
+				}
+
+				planets[i].addEventListener("collide", function(e) {
+					if (planets[i]) {
+						//console.log('collide fired on: ' + planets[i].id);
+						toastr.info("collision body: " + planets[i].planetId + " hit " + e.with.planetId + ' which last hit: ' + e.with.lastCollidedWith);
+						//toastr.info("collision pos: " + e.with.position.x + ',' + e.with.position.y + ',' + e.with.position.z);
+
+						if (planets[i].lastCollidedWith != e.planetId) {
+
+							planets[i].lastCollidedWith = e.with.planetId;
+
+							//TODO: now we should add the masses
+							e.mass += e.with.mass;
+							e.radius = e.mass / (10 * Math.PI);
+							//TODO: animate to new size
+
+							// And we add them to the demo to make them visible
+							demo.removeVisual(e.with);
+							world.remove(e.with);
+
+							//delete body...
+							delete planets[planets.indexOf(e.with)];
+							delete planetsShape[planets.indexOf(e.with)];
+
+							// We add the objects to the world to simulate them
+							//							demo.removeVisual(planets[e]);
+							planetsShape[i] = new CANNON.Sphere(thisMass / (10 * Math.PI));
+							//			demo.addVisual(planetsShape[e]);
+							//planetsShape[i].updateMatrix();
+
+						}
+					}
+				});
+			}
+			function s4() {
+				return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+			};
+
+			function guid() {
+				return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+			}
+
+
+			demo.start();
+		</script>
+	</body>
+</html>
