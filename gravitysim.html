@@ -60,6 +60,7 @@
 			createTestScene = function() {
 				var v = createPlanet(150, 5, 0, 0, 0, 0, 0);
 				v = createPlanet(150, -5, 0, 0, 0, 0, 0);
+				v = createPlanet(150, -35, 0, 0, 0, 0, 0);
 			}
 			createPlanet = function(mass, posX, posY, posZ, velX, velY, velZ) {
 
@@ -116,32 +117,40 @@
 				}
 
 				planets[i].addEventListener("collide", function(e) {
-					if (planets[i]) {
-						//console.log('collide fired on: ' + planets[i].id);
+					if (planets[i] && planets.indexOf(e.with)) {
 						toastr.info("collision body: " + planets[i].planetId + " hit " + e.with.planetId + ' which last hit: ' + e.with.lastCollidedWith);
-						//toastr.info("collision pos: " + e.with.position.x + ',' + e.with.position.y + ',' + e.with.position.z);
 
-						if (planets[i].lastCollidedWith != e.planetId) {
+						if (e.lastCollidedWith != e.with.planetId) {
 
-							planets[i].lastCollidedWith = e.with.planetId;
+							e.lastCollidedWith = e.with.planetId;
 
 							//TODO: now we should add the masses
-							planets[i].mass = planets[i].mass + e.with.mass;
-							planetsShape[i].radius = planets[i].mass / (10 * Math.PI);
-							planetsShape[i].boundingSphereRadius = planets[i].mass / (10 * Math.PI);
-							planetsShape[i].boundingSphereRadiusNeedsUpdate = true;
+							//planets[i].mass = planets[i].mass + e.with.mass;
+							//planets[i].boundRadius = planets[i].mass / (10 * Math.PI);
+							//planetsShape[i].radius = planets[i].mass / (10 * Math.PI);
+							//planetsShape[i].boundingSphereRadius = planets[i].mass / (10 * Math.PI);
+							//planetsShape[i].boundingSphereRadiusNeedsUpdate = true;
 							//TODO: animate to new size
 
-							// And we add them to the demo to make them visible
+							var newMass = planets[i].mass + e.with.mass;
+							var newPos = planets[i].position;
+							var newVel = planets[i].velocity;
+
+console.log(JSON.stringify(newPos));
+
 							demo.removeVisual(e.with);
 							world.remove(e.with);
 
-							//delete body...
-							delete planets[planets.indexOf(e.with)];
-							delete planetsShape[planetsShape.indexOf(e.with)];
+							planets.splice(planets.indexOf(e.with),1);
+							planetsShape.splice(planetsShape.indexOf(e.with),1);
 
-							//planets.splice(planets.indexOf(e.with),1);
-							//planetsShape.splice(planetsShape.indexOf(e.with),1);
+							demo.removeVisual(e);
+							world.remove(e);
+
+							planets.splice(planets.indexOf(e), 1);
+							planetsShape.splice(planetsShape.indexOf(e), 1);
+
+							createPlanet(newMass, newPos.x, newPos.y, newPos.z, newVel.x, newVel.y, newVel.z);
 
 						}
 					}
